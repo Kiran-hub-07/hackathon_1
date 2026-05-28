@@ -316,6 +316,7 @@
                     executePositionLock(currentLat, currentLon, statusText);
                 },
                 (error) => {
+                    // Fallback to Chennai base setup coordinates if blocked/unavailable
                     currentLat = "12.989986"; currentLon = "80.103561"; 
                     executePositionLock(currentLat, currentLon, statusText);
                 },
@@ -331,7 +332,7 @@
             document.querySelectorAll('.cat-tab').forEach(btn => btn.removeAttribute('disabled'));
             document.getElementById('sms-btn').removeAttribute('disabled');
             document.getElementById('sms-btn').onclick = () => { 
-                window.location.href = `sms:?body=ACCIDENT%20SOS!%20Location:http://maps.google.com/?q=${lat},${lon}`; 
+                window.location.href = `sms:?body=ACCIDENT%20SOS!%20Location:https://maps.google.com/?q=${lat},${lon}`; 
             };
             renderLeafletMapAndCards();
         }
@@ -402,13 +403,13 @@
                         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                     }
                     
-                    // Resume audio context if browser suspended it
+                    // Resume audio context if browser suspended it due to security rules
                     if (audioCtx.state === 'suspended') {
                         audioCtx.resume();
                     }
 
                     masterGain = audioCtx.createGain();
-                    masterGain.gain.setValueAtTime(0.25, audioCtx.currentTime); // High volume ceiling output
+                    masterGain.gain.setValueAtTime(0.25, audioCtx.currentTime); // Standardized clear output
 
                     // Oscillator 1: Base high-frequency saw piercing layer
                     primaryOsc = audioCtx.createOscillator();
@@ -421,23 +422,24 @@
                     secondaryOsc.frequency.setValueAtTime(453, audioCtx.currentTime);
 
                     // Low Frequency Oscillator (LFO) to modulate pitching sweep automatically
-                    modulationOsc = audioCtx.createModulator ? audioCtx.createModulator() : audioCtx.createOscillator();
+                    modulationOsc = audioCtx.createOscillator();
+                    modulationOsc.type = 'sine';
                     modulationOsc.frequency.setValueAtTime(1.5, audioCtx.currentTime); // 1.5Hz sweep cycle rate
 
                     const modulationGain = audioCtx.createGain();
                     modulationGain.gain.setValueAtTime(180, audioCtx.currentTime); // Pitch swing depth (+/- 180Hz)
 
-                    // Connect modulation routing map lines
+                    // Connect modulation routing map lines properly using standards
                     modulationOsc.connect(modulationGain);
                     modulationGain.connect(primaryOsc.frequency);
                     modulationGain.connect(secondaryOsc.frequency);
 
-                    // Output everything to sound hardware channels
+                    // Output everything to master volume sound node pipeline
                     primaryOsc.connect(masterGain);
                     secondaryOsc.connect(masterGain);
                     masterGain.connect(audioCtx.destination);
 
-                    // Fire tracking nodes immediately
+                    // Fire internal components safely
                     modulationOsc.start();
                     primaryOsc.start();
                     secondaryOsc.start();
@@ -448,7 +450,7 @@
 
                 } catch (e) {
                     console.error("Web Audio Pipeline blocked:", e);
-                    alert("Click anywhere on the web layout first, then hit Panic Siren again!");
+                    alert("Click anywhere on the web page first to register user context, then hit Panic Siren again!");
                 }
             }
         }
@@ -457,4 +459,3 @@
     </script>
 </body>
 </html>
-
